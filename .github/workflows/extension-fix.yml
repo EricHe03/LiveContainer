@@ -1,0 +1,85 @@
+name: LC + SideStore ExtensionFix
+
+on:
+  push:
+    branches: [sidestore-extension-fix]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: extension-fix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 120
+    env:
+      scheme: LiveContainer
+      archive_path: archive
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '27.2'
+      - name: Install packaging tools
+        run: brew install ldid
+      - name: Prepare pinned SideStore and SideSign with upstream PR fixes
+        run: python3 .github/extension-fix/prepare.py "$RUNNER_TEMP/extension-fix/SideStore"
+      - name: Test ExtensionKit detection in production SideSign
+        working-directory: ${{ runner.temp }}/extension-fix/SideStore/Dependencies/SideSign
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift test --filter appBundleLoadsExtensions 2>&1 | tee "$RUNNER_TEMP/extension-fix/sidesign-tests.log"
+      - name: Archive and package fixed LC-compatible SideStore
+        working-directory: ${{ runner.temp }}/extension-fix/SideStore
+        shell: bash
+        run: |
+          set -euo pipefail
+          make build fakesign ipa 2>&1 | tee "$RUNNER_TEMP/extension-fix/sidestore-build.log"
+          test -s SideStore.ipa
+      - name: Archive LiveContainer
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild archive -archivePath "$archive_path" \
+            -scheme "$scheme" -project LiveContainer.xcodeproj \
+            -sdk iphoneos -arch arm64 -configuration Release \
+            2>&1 | tee "$RUNNER_TEMP/extension-fix/livecontainer-build.log"
+      - name: Integrate SideStore using upstream LC + SS packaging
+        env:
+          SIDESTORE_IPA_PATH: ${{ runner.temp }}/extension-fix/SideStore/SideStore.ipa
+        run: |
+          bash .github/build_github.sh
+          mv 'LiveContainer+SideStore.ipa' 'LiveContainer+SideStore-ExtensionFix.ipa'
+      - name: Validate final IPA structure and ad hoc signatures
+        run: |
+          python3 .github/extension-fix/validate_ipa.py \
+            'LiveContainer+SideStore-ExtensionFix.ipa' \
+            --report "$RUNNER_TEMP/extension-fix/ipa-validation.json"
+          shasum -a 256 'LiveContainer+SideStore-ExtensionFix.ipa' > SHA256SUMS.txt
+      - name: Upload installable LC + SS package
+        uses: actions/upload-artifact@v7
+        with:
+          name: LiveContainer+SideStore-ExtensionFix.ipa
+          path: |
+            LiveContainer+SideStore-ExtensionFix.ipa
+            SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 90
+      - name: Upload build evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ExtensionFix-build-evidence
+          path: |
+            ${{ runner.temp }}/extension-fix/*.json
+            ${{ runner.temp }}/extension-fix/*.log
+          if-no-files-found: warn
+          retention-days: 30

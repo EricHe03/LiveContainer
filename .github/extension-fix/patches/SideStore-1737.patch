@@ -1,0 +1,121 @@
+diff --git a/SideStore/Core/Operations/PipelineOperations/RemoveAppExtensionsOperation.swift b/SideStore/Core/Operations/PipelineOperations/RemoveAppExtensionsOperation.swift
+index 22222a9a..cd65fbde 100644
+--- a/SideStore/Core/Operations/PipelineOperations/RemoveAppExtensionsOperation.swift
++++ b/SideStore/Core/Operations/PipelineOperations/RemoveAppExtensionsOperation.swift
+@@ -143,7 +143,7 @@ final class RemoveAppExtensionsOperation: BasePipelineOperation<InstallAppOperat
+         
+         if let manifestPlist = NSMutableDictionary(contentsOf: manifestPlistURL),
+            let sinfReplicationPaths = manifestPlist["SinfReplicationPaths"] as? [String] {
+-            let replacementPaths = sinfReplicationPaths.filter { !$0.starts(with: "PlugIns/") } // Filter out app extension paths.
++            let replacementPaths = sinfReplicationPaths.filter { !$0.starts(with: "PlugIns/") && !$0.starts(with: "Extensions/") } // Filter out app extension paths.
+             manifestPlist["SinfReplicationPaths"] = replacementPaths
+             try manifestPlist.write(to: manifestPlistURL)
+         }
+diff --git a/SideStore/Views/Components/AppInfoView.swift b/SideStore/Views/Components/AppInfoView.swift
+index 08338528..5f9061a7 100644
+--- a/SideStore/Views/Components/AppInfoView.swift
++++ b/SideStore/Views/Components/AppInfoView.swift
+@@ -584,17 +584,19 @@ struct ExtensionInfoView: View {
+     @State private var shareSheetItem: ShareableURLItem? = nil
+     #endif
+ 
+-    // Resolve the .appex bundle URL by scanning PlugIns/ and matching bundle ID
++    // Resolve the .appex bundle URL by scanning PlugIns/ and Extensions/ and matching bundle ID
+     private var extensionURL: URL? {
+-        let pluginsDir = parentAppURL.appendingPathComponent("PlugIns")
+-        guard let contents = try? FileManager.default.contentsOfDirectory(
+-            at: pluginsDir,
+-            includingPropertiesForKeys: nil,
+-            options: [.skipsHiddenFiles]
+-        ) else { return nil }
++        let contents = ["PlugIns", "Extensions"].flatMap { dirName -> [URL] in
++            let dir = parentAppURL.appendingPathComponent(dirName)
++            return (try? FileManager.default.contentsOfDirectory(
++                at: dir,
++                includingPropertiesForKeys: nil,
++                options: [.skipsHiddenFiles]
++            )) ?? []
++        }
+ 
+         // Match by bundle ID in Info.plist
+-        for url in contents where url.pathExtension == "appex" {
++        for url in contents where url.pathExtension.lowercased() == "appex" {
+             if let parser = try? InfoPlistParser(bundleURL: url),
+                let bid = parser.bundleIdentifier,
+                bid == appExtension.resignedBundleIdentifier || bid == appExtension.bundleIdentifier {
+@@ -602,7 +604,7 @@ struct ExtensionInfoView: View {
+             }
+         }
+         // Fallback: name-based guess
+-        return contents.first { $0.pathExtension == "appex" && $0.deletingPathExtension().lastPathComponent == appExtension.name }
++        return contents.first { $0.pathExtension.lowercased() == "appex" && $0.deletingPathExtension().lastPathComponent == appExtension.name }
+     }
+ 
+     private var resignedProfileURL: URL? {
+@@ -649,13 +651,15 @@ struct ExtensionInfoView: View {
+ 
+     // Nested sub-extensions inside this .appex (rare but possible)
+     private var subExtensions: [URL] {
+-        guard let url = extensionURL,
+-              let contents = try? FileManager.default.contentsOfDirectory(
+-                at: url.appendingPathComponent("PlugIns"),
++        guard let url = extensionURL else { return [] }
++        return ["PlugIns", "Extensions"].flatMap { dirName -> [URL] in
++            let contents = (try? FileManager.default.contentsOfDirectory(
++                at: url.appendingPathComponent(dirName),
+                 includingPropertiesForKeys: nil,
+                 options: [.skipsHiddenFiles]
+-              ) else { return [] }
+-        return contents.filter { $0.pathExtension == "appex" }
++            )) ?? []
++            return contents.filter { $0.pathExtension.lowercased() == "appex" }
++        }
+     }
+ 
+     var body: some View {
+@@ -890,12 +894,14 @@ struct BundleInspectorView: View {
+     }
+ 
+     private var subExtensions: [URL] {
+-        guard let contents = try? FileManager.default.contentsOfDirectory(
+-            at: bundleURL.appendingPathComponent("PlugIns"),
+-            includingPropertiesForKeys: nil,
+-            options: [.skipsHiddenFiles]
+-        ) else { return [] }
+-        return contents.filter { $0.pathExtension == "appex" }
++        ["PlugIns", "Extensions"].flatMap { dirName -> [URL] in
++            let contents = (try? FileManager.default.contentsOfDirectory(
++                at: bundleURL.appendingPathComponent(dirName),
++                includingPropertiesForKeys: nil,
++                options: [.skipsHiddenFiles]
++            )) ?? []
++            return contents.filter { $0.pathExtension.lowercased() == "appex" }
++        }
+     }
+ 
+     private var displayName: String {
+diff --git a/SideStore/Views/Components/BundleResourceBrowserView.swift b/SideStore/Views/Components/BundleResourceBrowserView.swift
+index 6abdf46d..7fbc6da7 100644
+--- a/SideStore/Views/Components/BundleResourceBrowserView.swift
++++ b/SideStore/Views/Components/BundleResourceBrowserView.swift
+@@ -423,12 +423,14 @@ struct FullAppBundleView: View {
+     }
+ 
+     private var appExtensions: [URL] {
+-        let dir = bundleURL.appendingPathComponent("PlugIns")
+-        guard let contents = try? FileManager.default.contentsOfDirectory(
+-            at: dir, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+-        ) else { return [] }
+-        return contents.filter { $0.pathExtension == "appex" }
+-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
++        ["PlugIns", "Extensions"].flatMap { dirName -> [URL] in
++            let dir = bundleURL.appendingPathComponent(dirName)
++            let contents = (try? FileManager.default.contentsOfDirectory(
++                at: dir, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
++            )) ?? []
++            return contents.filter { $0.pathExtension.lowercased() == "appex" }
++        }
++        .sorted { $0.lastPathComponent < $1.lastPathComponent }
+     }
+ 
+     private var displayName: String {

@@ -2,6 +2,7 @@ name: Xcode - Build
 
 on: 
   push:
+    branches-ignore: [sidestore-extension-fix]
   pull_request:
   workflow_dispatch:
     inputs: 

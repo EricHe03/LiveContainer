@@ -1,0 +1,25 @@
+{
+  "sidestore": {
+    "repository": "LiveContainer/SideStore",
+    "branch": "LiveContainerSupport",
+    "revision": "044bd72ad4eb270c3900bd04dc6f508d0ac474db"
+  },
+  "sidesign": {
+    "repository": "SideStore/SideSign",
+    "revision": "752d1ef602aa792a432ffa1e71646dc1ecf7363c"
+  },
+  "patches": [
+    {
+      "target": "sidestore",
+      "file": "SideStore-1737.patch",
+      "url": "https://github.com/SideStore/SideStore/pull/1737",
+      "revision": "0e38842215451a472a24a8ca5774c2b993823b34"
+    },
+    {
+      "target": "sidesign",
+      "file": "SideSign-10.patch",
+      "url": "https://github.com/SideStore/SideSign/pull/10",
+      "revision": "8e8016f37de44cfec4acbe68f084d6a78cdb96eb"
+    }
+  ]
+}
