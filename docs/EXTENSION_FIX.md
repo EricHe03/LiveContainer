@@ -4,6 +4,10 @@ This branch builds one integrated LC+SS IPA from the existing LiveContainer
 packaging process. It preserves `Extensions/iOSHelper.appex` in UTM; no UTM files
 are removed or disabled. It does not add a separately installed SideStore app.
 
+The first successful build is available in [Actions run 44050086015](https://github.com/EricHe03/LiveContainer/actions/runs/44050086015).
+See [recorded test results](EXTENSION_FIX_TEST_RESULTS.md) for the exact build,
+artifact, checksum and remaining device-test limits.
+
 ## Patch record (17 November 2026)
 
 Both proposed upstream fixes were open and unmerged when inspected:
@@ -140,3 +144,8 @@ Push the reviewed pin/patch changes to rebuild, inspect the uploaded evidence,
 then repeat the device test above. The workflow does not silently follow moving
 nightly releases, auto-merge upstream changes, publish releases or submit PRs
 to upstream repositories.
+
+Installing an official LC+SS update replaces its embedded SideStore with the
+official build, so use this branch's rebuilt IPA when upgrading while the
+upstream fixes remain outstanding. Refreshing the existing signed installation
+and replacing it with a newer IPA are separate operations.
