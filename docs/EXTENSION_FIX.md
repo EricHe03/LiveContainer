@@ -14,7 +14,10 @@ Both proposed upstream fixes were open and unmerged when inspected:
 | LC-compatible SideStore | `LiveContainer/SideStore`, `LiveContainerSupport`, `044bd72ad4eb270c3900bd04dc6f508d0ac474db` | [SideStore PR #1737](https://github.com/SideStore/SideStore/pull/1737), revision `0e38842215451a472a24a8ca5774c2b993823b34`. |
 | SideSign | `SideStore/SideSign`, `752d1ef602aa792a432ffa1e71646dc1ecf7363c` | [SideSign PR #10](https://github.com/SideStore/SideSign/pull/10), revision `8e8016f37de44cfec4acbe68f084d6a78cdb96eb`. |
 
-The patch files are snapshots of those PR diffs, including their regression tests.
+The two numbered patch files are snapshots of those PR diffs, including their
+regression tests. An additional test-only patch imports Foundation explicitly:
+the first Actions build exposed missing FileManager/URL/UUID symbols in the
+upstream test file. This supplemental patch does not modify production signing.
 No third-party binary or extfix release is embedded. Existing SideStore and
 SideSign code remains responsible for App ID registration, profile acquisition,
 entitlement filtering and CodeSignKit signing. Detecting the extension makes it
@@ -36,15 +39,17 @@ For the supplied example, the expected identifiers after personal signing are:
 ## Build and download
 
 Open **Actions → LC + SideStore ExtensionFix** in this fork. A push to
-`sidestore-extension-fix` builds automatically. For a manual rebuild, choose
-**Run workflow** and select that branch. If GitHub disabled Actions when the
+`sidestore-extension-fix` builds automatically. For a manual rebuild, open an
+existing run and choose **Re-run all jobs**. `workflow_dispatch` is also declared
+for use if the workflow is later included on the fork's default branch; GitHub
+requires that before offering manual dispatch. If GitHub disabled Actions when the
 repository was forked, first enable workflows in the Actions tab.
 
 The workflow uses GitHub's `xcode-27` hosted image with Xcode 27.2. It:
 
 1. Checks out LC and its submodules.
 2. Fetches the exact SideStore/SideSign revisions in `sources.json`.
-3. Applies the two PR snapshots. An already-applied patch is skipped; a patch
+3. Applies the two PR snapshots and the test-only Foundation import. An already-applied patch is skipped; a patch
    that neither applies nor reverses cleanly stops the build for review.
 4. Runs the actual SideSign ExtensionKit discovery tests using `swift test`.
 5. Runs SideStore's `make build fakesign ipa`.

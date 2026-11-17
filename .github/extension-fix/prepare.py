@@ -10,8 +10,11 @@ HERE = Path(__file__).resolve().parent
 
 
 def git(root, *args, check=True):
-    return subprocess.run(["git", "-C", str(root), *args], check=check,
-                          text=True, capture_output=True)
+    result = subprocess.run(["git", "-C", str(root), *args],
+                            text=True, capture_output=True)
+    if check and result.returncode:
+        raise RuntimeError(f"git {' '.join(args)} failed:\n{result.stdout}{result.stderr}")
+    return result
 
 
 def checkout(repository, revision, destination):

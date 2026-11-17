@@ -20,6 +20,11 @@
       "file": "SideSign-10.patch",
       "url": "https://github.com/SideStore/SideSign/pull/10",
       "revision": "8e8016f37de44cfec4acbe68f084d6a78cdb96eb"
+    },
+    {
+      "target": "sidesign",
+      "file": "SideSign-tests-Foundation.patch",
+      "purpose": "Import Foundation explicitly in the upstream regression test file"
     }
   ]
 }

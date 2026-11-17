@@ -1,0 +1,11 @@
+diff --git a/Tests/SideSignTests/SideSignTests.swift b/Tests/SideSignTests/SideSignTests.swift
+--- a/Tests/SideSignTests/SideSignTests.swift
++++ b/Tests/SideSignTests/SideSignTests.swift
+@@ -6,6 +6,7 @@
+ //  Copyright © 2026 SideSign. All rights reserved.
+ //
+ 
++import Foundation
+ import Testing
+ @testable import SideSign
+ import CodeSignKit
